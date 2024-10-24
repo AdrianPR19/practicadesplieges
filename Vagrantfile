@@ -8,6 +8,28 @@ Vagrant.configure("2") do |config|
             vb.memory = "512"  
             vb.cpus = 1  
         end
+
+        
+        venus.vm.provision "shell", inline: <<-SHELL
+            sudo apt-get update
+            sudo apt-get install -y bind9
+
+            
+            echo 'zone "sistema.test" {' | sudo tee -a /etc/bind/named.conf.local
+            echo '    type slave;' | sudo tee -a /etc/bind/named.conf.local
+            echo '    file "/etc/bind/db.sistema.test";' | sudo tee -a /etc/bind/named.conf.local
+            echo '    masters { 192.168.57.103; };' | sudo tee -a /etc/bind/named.conf.local
+            echo '};' | sudo tee -a /etc/bind/named.conf.local
+
+            echo 'zone "57.168.192.in-addr.arpa" {' | sudo tee -a /etc/bind/named.conf.local
+            echo '    type slave;' | sudo tee -a /etc/bind/named.conf.local
+            echo '    file "/etc/bind/db.192.168.57";' | sudo tee -a /etc/bind/named.conf.local
+            echo '    masters { 192.168.57.103; };' | sudo tee -a /etc/bind/named.conf.local
+            echo '};' | sudo tee -a /etc/bind/named.conf.local
+
+            
+            sudo systemctl restart bind9
+        SHELL
     end
 
     config.vm.define "tierra" do |tierra|
@@ -19,18 +41,38 @@ Vagrant.configure("2") do |config|
             vb.cpus = 1  
         end
 
-        tierra.vm.provision "shell", inline: <<-SSHELL
+        tierra.vm.provision "shell", inline: <<-SHELL
             sudo apt-get update
             sudo apt-get install -y bind9
             sudo cp -v /vagrant/named /etc/default/named
             sudo systemctl restart bind9
 
+            
             echo 'dnssec-validation yes;' | sudo tee -a /etc/bind/named.conf.options
             echo 'acl "redes_permitidas" { 127.0.0.0/8; 192.168.57.0/24; };' | sudo tee -a /etc/bind/named.conf.options
+
+            
+            sudo sed -i '/options {/a \\nallow-recursion { redes_permitidas; };' /etc/bind/named.conf.options
+            sudo sed -i '/allow-query { /a \\nallow-query { redes_permitidas; };' /etc/bind/named.conf.options
+            sudo sed -i '/allow-query-cache { /a \\nallow-query-cache { redes_permitidas; };' /etc/bind/named.conf.options
+
             
             sudo systemctl restart bind9
-        SSHELL
+            
+            
+            echo 'zone "sistema.test" {' | sudo tee -a /etc/bind/named.conf.local
+            echo '    type master;' | sudo tee -a /etc/bind/named.conf.local
+            echo '    file "/etc/bind/db.sistema.test";' | sudo tee -a /etc/bind/named.conf.local
+            echo '};' | sudo tee -a /etc/bind/named.conf.local
+
+           
+            echo 'zone "57.168.192.in-addr.arpa" {' | sudo tee -a /etc/bind/named.conf.local
+            echo '    type master;' | sudo tee -a /etc/bind/named.conf.local
+            echo '    file "/etc/bind/db.192.168.57";' | sudo tee -a /etc/bind/named.conf.local
+            echo '};' | sudo tee -a /etc/bind/named.conf.local
+
+        
+            sudo systemctl restart bind9
+        SHELL
     end
 end
-
-  
