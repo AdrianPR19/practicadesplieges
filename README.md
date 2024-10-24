@@ -42,9 +42,10 @@ El `Vagrantfile` crea las máquinas virtuales **venus** y **tierra** utilizando 
    ```bash
    git clone https://github.com/AdrianPR19/practicadesplieges
    cd practicadesplieges
+   ```
 
 1. Introduce este codigo en el fichero vagrantfile :
-
+```bash
     Vagrant.configure("2") do |config|
   
     config.vm.define "venus" do |venus|
@@ -68,3 +69,21 @@ El `Vagrantfile` crea las máquinas virtuales **venus** y **tierra** utilizando 
       end
     end
   end
+  ```
+
+  ## 3.datos del DNS
+
+  1. Activa solamente la escucha del servidor para el protocolo IPv4.
+  ---He añadido en la configuracion de bind  `OPTIONS="-u bind -4"`
+
+  2. Establecer la opción dnssec-validation a yes
+  ---He ido al apartado de configuracion  `sudo nano /etc/bind/named.conf.options` y he agregado `dnssec-validation yes;`
+
+  3. Los servidores permitirán las consultas recursivas sólo a los ordenadores en la red 127.0.0.0/8 y en la red 192.168.57.0/24, para ello utilizarán la opción de listas de contro de acceso o acl.
+  ---He accedido al directorio `sudo nano /etc/bind/named.conf.options` y he añadido esta acl: 
+  acl "redes_permitidas" {
+    127.0.0.0/8;      // Localhost
+    192.168.57.0/24;  // Red local
+    };
+
+  4. Los
