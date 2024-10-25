@@ -89,6 +89,14 @@ El `Vagrantfile` crea las máquinas virtuales **venus** y **tierra** utilizando 
     127.0.0.0/8;      // Localhost
     192.168.57.0/24;  // Red local
     };
+  ```
+  y he agregado este codigo que hpermite las consultas recursivas:
+
+  ```bash
+            sudo sed -i '/options {/a \\nallow-recursion { redes_permitidas; };' /etc/bind/named.conf.options
+            sudo sed -i '/allow-query { /a \\nallow-query { redes_permitidas; };' /etc/bind/named.conf.options
+            sudo sed -i '/allow-query-cache { /a \\nallow-query-cache { redes_permitidas; };' /etc/bind/named.conf.options
+  ```
     
 
 
@@ -103,7 +111,7 @@ options {
         auth-nxdomain no;     
         listen-on-v6 { any; }; 
     };
-
+```
 
 ## 4.datos del DNS El servidor maestro será tierra.sistema.test y tendrá autoridad sobre la zona directa e inversa
   ---aqui he configurado la maquina tierra agregando la zona directa y inversa 
@@ -119,14 +127,14 @@ options {
         echo '    type master;' | sudo tee -a /etc/bind/named.conf.local
         echo '    file "/etc/bind/db.192.168.57";' | sudo tee -a /etc/bind/named.conf.local
         echo '};' | sudo tee -a /etc/bind/named.conf.local
-    
+ ```   
 
 
 ## 5.El servidor esclavo será venus.sistema.test y tendrá como maestro a tierra.sistema.test.
   ---aqui he configurado la maquina venus para que sea esclavo agregando la zona directa y inversa 
      
-     ```bash
-        echo 'zone "sistema.test" {' | sudo tee -a /etc/bind/named.conf.local
+  ```bash
+      echo 'zone "sistema.test" {' | sudo tee -a /etc/bind/named.conf.local
             echo '    type slave;' | sudo tee -a /etc/bind/named.conf.local
             echo '    file "/etc/bind/db.sistema.test";' | sudo tee -a /etc/bind/named.conf.local
             echo '    masters { 192.168.57.103; };' | sudo tee -a /etc/bind/named.conf.local
@@ -141,6 +149,53 @@ options {
             
             sudo systemctl restart bind9
         SHELL
-     end
-    
-    
+     end  
+  ``` 
+  
+  
+##  6. El tiempo en caché de las respuestas negativas de las zonas (directa e inversa) será de dos horas
+(se pone en segundos).
+
+Para esto he agregado este codigo: 
+```bash 
+echo '    negative-cache 7200;' | sudo tee -a /etc/bind/named.conf.local 
+```
+
+##  7. Aquellas consultas que reciba el servidor para la que no está autorizado, deberá reenviarlas
+(forward) al servidor DNS 208.67.222.222 (OpenDNS).
+
+Para esto he agregado este codigo: 
+```bash 
+echo 'options {' | sudo tee /etc/bind/named.conf.options
+            echo '    directory "/var/cache/bind";' | sudo tee -a /etc/bind/named.conf.options
+            echo '    forwarders {' | sudo tee -a /etc/bind/named.conf.options
+            echo '        208.67.222.222;' | sudo tee -a /etc/bind/named.conf.options
+            echo '    };' | sudo tee -a /etc/bind/named.conf.options
+            echo '    forward only;' | sudo tee -a /etc/bind/named.conf.options
+            echo '};' | sudo tee -a /etc/bind/named.conf.options 
+```
+
+##  8. Se configurarán los siguientes alias:
+
+He agregado este codigo que añade los alias de tierra y venus:
+a. ns1.sistema.test. será un alias de tierra.sistema.test.
+b. ns2.sistema.test. será un alias de venus.sistema.test..
+```bash
+            echo '; Archivo de zona para sistema.test' | sudo tee /etc/bind/db.sistema.test
+            echo '$TTL 604800' | sudo tee -a /etc/bind/db.sistema.test
+            echo '@ IN SOA tierra.sistema.test. root.sistema.test. (' | sudo tee -a /etc/bind/db.sistema.test
+            echo '    1 ; Serial' | sudo tee -a /etc/bind/db.sistema.test
+            echo '    604800 ; Refresh' | sudo tee -a /etc/bind/db.sistema.test
+            echo '    86400 ; Retry' | sudo tee -a /etc/bind/db.sistema.test
+            echo '    2419200 ; Expire' | sudo tee -a /etc/bind/db.sistema.test
+            echo '    604800 ) ; Negative Cache TTL' | sudo tee -a /etc/bind/db.sistema.test
+            echo '; Servidores de nombres' | sudo tee -a /etc/bind/db.sistema.test
+            echo '@ IN NS tierra.sistema.test.' | sudo tee -a /etc/bind/db.sistema.test
+            echo '@ IN NS venus.sistema.test.' | sudo tee -a /etc/bind/db.sistema.test
+            echo '; Registros A' | sudo tee -a /etc/bind/db.sistema.test
+            echo 'tierra IN A 192.168.57.103' | sudo tee -a /etc/bind/db.sistema.test
+            echo 'venus IN A 192.168.57.102' | sudo tee -a /etc/bind/db.sistema.test
+            echo '; Alias (CNAME)' | sudo tee -a /etc/bind/db.sistema.test
+            echo 'ns1 IN CNAME tierra.sistema.test.' | sudo tee -a /etc/bind/db.sistema.test
+            echo 'ns2 IN CNAME venus.sistema.test.' | sudo tee -a /etc/bind/db.sistema.test
+```
