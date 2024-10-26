@@ -87,12 +87,17 @@ Vagrant.configure("2") do |config|
             echo '; Servidores de nombres' | sudo tee -a /etc/bind/db.sistema.test
             echo '@ IN NS tierra.sistema.test.' | sudo tee -a /etc/bind/db.sistema.test
             echo '@ IN NS venus.sistema.test.' | sudo tee -a /etc/bind/db.sistema.test
+            echo '@ IN MX 10 marte.sistema.test.' | sudo tee -a /etc/bind/db.sistema.test
             echo '; Registros A' | sudo tee -a /etc/bind/db.sistema.test
             echo 'tierra IN A 192.168.57.103' | sudo tee -a /etc/bind/db.sistema.test
             echo 'venus IN A 192.168.57.102' | sudo tee -a /etc/bind/db.sistema.test
+            echo 'marte IN A 192.168.57.104' | sudo tee -a /etc/bind/db.sistema.test
             echo '; Alias (CNAME)' | sudo tee -a /etc/bind/db.sistema.test
             echo 'ns1 IN CNAME tierra.sistema.test.' | sudo tee -a /etc/bind/db.sistema.test
             echo 'ns2 IN CNAME venus.sistema.test.' | sudo tee -a /etc/bind/db.sistema.test
+
+            echo 'mail IN CNAME marte.sistema.test' | sudo tee -a /etc/bind/db.sistema.test
+            sudo systemctl restart bind9
 
             sudo systemctl restart bind9
         SHELL

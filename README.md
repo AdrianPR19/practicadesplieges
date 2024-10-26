@@ -199,3 +199,48 @@ b. ns2.sistema.test. será un alias de venus.sistema.test..
             echo 'ns1 IN CNAME tierra.sistema.test.' | sudo tee -a /etc/bind/db.sistema.test
             echo 'ns2 IN CNAME venus.sistema.test.' | sudo tee -a /etc/bind/db.sistema.test
 ```
+
+##  9. mail.sistema.test. será un alias de marte.sistema.test.
+Para esto he usado este codigo:
+
+```bash
+echo 'mail IN CNAME marte.sistema.test' | sudo tee -a /etc/bind/db.sistema.test
+```
+
+##  10. mail.sistema.test. será un alias de marte.sistema.test.
+Para esto he usado este codigo:
+
+```bash
+            echo '@ IN MX 10 marte.sistema.test.' | sudo tee -a /etc/bind/db.sistema.test
+            echo 'marte IN A 192.168.57.104' | sudo tee -a /etc/bind/db.sistema.test
+```
+
+
+##  4. Comprobación
+
+ Puedes resolver los registros tipo A.
+
+ ```bash
+dig @localhost tierra.sistema.test
+dig @localhost venus.sistema.test 
+ ```
+ Comprueba que se pueden resolver de forma inversa sus direcciones IP.
+ ```bash
+dig -x 192.168.57.103
+dig -x 192.168.57.102
+dig -x 192.168.57.104
+```
+Puedes resolver los alias ns1.sistema.test y ns2.sistema.test.
+```bash
+dig ns1.sistema.test
+dig ns2.sistema.test
+```
+Realiza la consulta para saber los servidores NS de sistema.test. Debes obtener
+tierra.sistema.test y venus.sistema.test
+```bash
+dig sistema.test NS
+```
+Realiza la consulta para saber los servidores MX de sistema.test
+```bash
+dig sistema.test MX
+```
